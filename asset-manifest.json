@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/shopeasy/static/css/main.021b17d4.css",
+    "main.js": "/shopeasy/static/js/main.ed236cc0.js",
+    "static/js/453.fd2f0c4a.chunk.js": "/shopeasy/static/js/453.fd2f0c4a.chunk.js",
+    "index.html": "/shopeasy/index.html",
+    "main.021b17d4.css.map": "/shopeasy/static/css/main.021b17d4.css.map",
+    "main.ed236cc0.js.map": "/shopeasy/static/js/main.ed236cc0.js.map",
+    "453.fd2f0c4a.chunk.js.map": "/shopeasy/static/js/453.fd2f0c4a.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.021b17d4.css",
+    "static/js/main.ed236cc0.js"
+  ]
+}
