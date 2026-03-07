@@ -1,50 +1,99 @@
-import { useLocation, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 import "./Dashboard.css";
 
 export default function DealsPage() {
 
-  const location = useLocation();
+  const { id } = useParams();
   const navigate = useNavigate();
-  const deal = location.state;
 
-  // ✅ Get products from localStorage (added via Admin)
-  const products = JSON.parse(localStorage.getItem("products")) || [];
+  const [deal, setDeal] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // ❌ If page refreshed and state lost
-  if (!deal) return <div>Invalid Deal</div>;
+  const API = "http://localhost:5000";
 
-  // ✅ Find the linked product using productId
-  const product = products.find(p => p.id === deal.productId);
+  useEffect(() => {
 
-  if (!product) return <div>Product not found</div>;
+    const fetchDeal = async () => {
+
+      try {
+
+        const res = await fetch(`${API}/deals/${id}`);
+
+        if (!res.ok) throw new Error("Deal not found");
+
+        const data = await res.json();
+
+        console.log("Deal API:", data);
+
+        setDeal(data);
+
+      } catch (err) {
+
+        console.error(err);
+        alert("Deal not found");
+        navigate("/dashboard");
+
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDeal();
+
+  }, [id, navigate]);
+
+
+
+  if (loading) {
+    return <div style={{ padding: "40px" }}>Loading deal...</div>;
+  }
+
+  if (!deal) {
+    return <div style={{ padding: "40px" }}>No deal found</div>;
+  }
+
+
 
   return (
     <div className="dashboard">
 
       <div className="section">
+
         <button onClick={() => navigate(-1)}>← Back</button>
 
-        <h2>{deal.title}</h2>
-        <p>{deal.discount}</p>
+        <h2>{deal.discount} OFF</h2>
+
       </div>
 
+
       <div className="section">
+
         <div className="products-grid">
 
           <div className="product-card">
-            <img src={product.image} alt={product.name} />
+
+            <img
+              src={deal.image || "https://via.placeholder.com/200"}
+              alt={deal.title}
+            />
 
             <div className="product-info">
-              <h4>{product.name}</h4>
-              <p>
-                ₹{new Intl.NumberFormat("en-IN").format(product.price)}
-              </p>
-              <p>Status: {product.status}</p>
-              <p>Stock: {product.stock}</p>
+
+              <h4>{deal.title}</h4>
+
+              {deal.category && (
+                <p>Category: {deal.category}</p>
+              )}
+
+              <p>Discount: {deal.discount}</p>
+
             </div>
+
           </div>
 
         </div>
+
       </div>
 
     </div>

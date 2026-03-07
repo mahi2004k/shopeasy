@@ -2,41 +2,12 @@ import { useState, useEffect } from "react";
 import "./AdminPanel.css";
 
 export default function AdminPanel() {
+  const API = "http://localhost:5000";
 
-  const [products, setProducts] = useState(() => {
-    return JSON.parse(localStorage.getItem("products")) || [];
-  });
-
-  // ✅ DEAL STATES
-const [deals, setDeals] = useState(() => {
-  return JSON.parse(localStorage.getItem("deals")) || [];
-});
-
-const [newDeal, setNewDeal] = useState({
-  id: "",
-  title: "",
-  discount: "",
-  image: "",
-  category: ""
-});
-
-const [editingDealId, setEditingDealId] = useState(null);
-const [editedDeal, setEditedDeal] = useState({});
-
-
-  const [search, setSearch] = useState("");
-  const [filterCategory, setFilterCategory] = useState("All");
-  const [editingId, setEditingId] = useState(null);
-  const [editedProduct, setEditedProduct] = useState({});
-
-  const categories = [
-  "Fashion", "Electronics", "Furniture", "Stationery",
-  "Mobiles", "Groceries", "Appliances", "Beauty",
-  "Books", "Toys", "Sports", "Automobile",
-];
+  const [products, setProducts] = useState([]);
+  const [deals, setDeals] = useState([]);
 
   const [newProduct, setNewProduct] = useState({
-    id: "",
     name: "",
     price: "",
     category: "",
@@ -45,277 +16,188 @@ const [editedDeal, setEditedDeal] = useState({});
     image: ""
   });
 
-  useEffect(() => {
-    localStorage.setItem("products", JSON.stringify(products));
-  }, [products]);
+  const [editingProduct, setEditingProduct] = useState(null);
 
-  useEffect(() => {
-  localStorage.setItem("deals", JSON.stringify(deals));
-}, [deals]);
-
-
-  // ✅ Add Product
-  const handleAddProduct = () => {
-
-    if (!newProduct.name || !newProduct.price || !newProduct.category) {
-      alert("Fill all fields ❌");
-      return;
-    }
-
-    const productWithId = {
-      ...newProduct,
-      id: crypto.randomUUID() // unique ID
-    };
-
-    setProducts([...products, productWithId]);
-
-    setNewProduct({
-      id: "",
-      name: "",
-      price: "",
-      category: "",
-      stock: "",
-      status: "Active",
-      image: ""
-    });
-
-    alert("Product Added ✅");
-  };
-
-  // ✅ Add Deal
-const handleAddDeal = () => {
-
-  if (!newDeal.title || !newDeal.image) {
-    alert("Fill deal details ❌");
-    return;
-  }
-
-  const dealWithId = {
-    ...newDeal,
-    id: crypto.randomUUID()
-  };
-
-  setDeals([...deals, dealWithId]);
-
-  setNewDeal({
-    id: "",
+  const [newDeal, setNewDeal] = useState({
     title: "",
     discount: "",
     image: "",
     category: ""
   });
 
-  alert("Deal Added ✅");
-};
+  const [editingDeal, setEditingDeal] = useState(null);
 
-// ✅ Delete Deal
-const handleDeleteDeal = (id) => {
-  setDeals(deals.filter(deal => deal.id !== id));
-};
+  // ================= LOAD PRODUCTS =================
+  useEffect(() => {
+    fetch(`${API}/products`)
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setProducts(data);
+        else setProducts([]);
+      })
+      .catch(err => console.error("Products Fetch Error:", err));
+  }, []);
 
-  // ✅ Delete
-  const handleDelete = (id) => {
-    setProducts(products.filter(p => p.id !== id));
+  // ================= LOAD DEALS =================
+  useEffect(() => {
+    fetch(`${API}/deals`)
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setDeals(data);
+        else setDeals([]);
+      })
+      .catch(err => console.error("Deals Fetch Error:", err));
+  }, []);
+
+  // ================= ADD / UPDATE PRODUCT =================
+  const handleAddProduct = async () => {
+    try {
+      const payload = { ...newProduct, price: parseFloat(newProduct.price), stock: parseInt(newProduct.stock) || 0 };
+      const response = await fetch(`${API}/products`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setProducts([...products, data]);
+        resetProductForm();
+        alert("Product Added ✅");
+      } else {
+        alert(data.message || "Error adding product");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Server connection error ❌");
+    }
   };
 
+  const handleUpdateProduct = async () => {
+    try {
+      const payload = { ...newProduct, price: parseFloat(newProduct.price), stock: parseInt(newProduct.stock) || 0 };
+      const response = await fetch(`${API}/products/${editingProduct.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setProducts(products.map(p => (p.id === editingProduct.id ? data : p)));
+        resetProductForm();
+        alert("Product Updated ✅");
+      } else {
+        alert(data.message || "Error updating product");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Server connection error ❌");
+    }
+  };
 
-  // ✅ Start Deal Edit
-const handleEditDeal = (deal) => {
-  setEditingDealId(deal.id);
-  setEditedDeal({ ...deal });
-};
+  const handleEditProduct = (product) => {
+    setEditingProduct(product);
+    setNewProduct({ ...product, price: product.price.toString(), stock: product.stock.toString() });
+  };
 
-// ✅ Save Deal Edit
-const handleSaveDeal = () => {
-  const updatedDeals = deals.map(d =>
-    d.id === editingDealId ? { ...editedDeal } : d
-  );
+  const handleDeleteProduct = async (id) => {
+    try {
+      await fetch(`${API}/products/${id}`, { method: "DELETE" });
+      setProducts(products.filter(p => p.id !== id));
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
-  setDeals(updatedDeals);
-  setEditingDealId(null);
-  alert("Deal Updated ✅");
-};
+  const resetProductForm = () => {
+    setNewProduct({ name: "", price: "", category: "", stock: "", status: "Active", image: "" });
+    setEditingProduct(null);
+  };
 
-// ✅ Cancel Deal Edit
-const handleCancelDeal = () => {
-  setEditingDealId(null);
-};
+  // ================= ADD / UPDATE DEAL =================
+  const handleAddDeal = async () => {
+    try {
+      const payload = { ...newDeal, discount: parseInt(newDeal.discount) || 0 };
+      const response = await fetch(`${API}/deals`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setDeals([...deals, data]);
+        resetDealForm();
+        alert("Deal Added ✅");
+      } else {
+        alert(data.message || "Error adding deal");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Server connection error ❌");
+    }
+  };
 
+  const handleUpdateDeal = async () => {
+    try {
+      const payload = { ...newDeal, discount: parseInt(newDeal.discount) || 0 };
+      const response = await fetch(`${API}/deals/${editingDeal.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setDeals(deals.map(d => (d.id === editingDeal.id ? data : d)));
+        resetDealForm();
+        alert("Deal Updated ✅");
+      } else {
+        alert(data.message || "Error updating deal");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Server connection error ❌");
+    }
+  };
 
-  // ✅ Start Edit
-const handleEdit = (product) => {
-  setEditingId(product.id);
-  setEditedProduct({...product});
-};
+  const handleEditDeal = (deal) => {
+    setEditingDeal(deal);
+    setNewDeal({ ...deal, discount: deal.discount.toString() });
+  };
 
-// ✅ Save Edit
-const handleSave = () => {
-  const updatedProducts = products.map(p =>
-    p.id === editingId ? { ...editedProduct } : p
-  );
+  const handleDeleteDeal = async (id) => {
+    try {
+      await fetch(`${API}/deals/${id}`, { method: "DELETE" });
+      setDeals(deals.filter(d => d.id !== id));
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
-  setProducts(updatedProducts);
-  setEditingId(null);
-  alert("Product Updated ✅");
-};
-
-// ✅ Cancel Edit
-const handleCancel = () => {
-  setEditingId(null);
-};
-
-  // ✅ Filter + Search Logic
-  const filteredProducts = products
-    .filter(p =>
-      p.name.toLowerCase().includes(search.toLowerCase())
-    )
-    .filter(p =>
-      filterCategory === "All"
-        ? true
-        : p.category === filterCategory
-    );
+  const resetDealForm = () => {
+    setNewDeal({ title: "", discount: "", image: "", category: "" });
+    setEditingDeal(null);
+  };
 
   return (
     <div className="admin-panel">
-
       <h2>Admin Dashboard 📊</h2>
 
-      {/* ===== STATS SECTION ===== */}
-      <div className="admin-stats">
-        <div>Total Products: {products.length}</div>
-      </div>
-
-      {/* ===== SEARCH + FILTER ===== */}
-      <div className="admin-controls">
-        <input
-          placeholder="Search product..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-
-        <select
-          value={filterCategory}
-          onChange={(e) => setFilterCategory(e.target.value)}
-        >
-          <option>All</option>
-          <option>Electronics</option>
-          <option>Fashion</option>
-          <option>Home</option>
-        </select>
-      </div>
-
-      {/* ===== ADD PRODUCT FORM ===== */}
+      {/* ================= PRODUCT FORM ================= */}
       <div className="admin-form">
-
-        <input
-          placeholder="Product Name"
-          value={newProduct.name}
-          onChange={(e) =>
-            setNewProduct({ ...newProduct, name: e.target.value })
-          }
-        />
-
-        <input
-          type="number"
-          placeholder="Price"
-          value={newProduct.price}
-          onChange={(e) =>
-            setNewProduct({ ...newProduct, price: e.target.value })
-          }
-        />
-
-        <select
-        value={newProduct.category}
-        onChange={(e) =>
-          setNewProduct({ ...newProduct, category: e.target.value })
-        }
-      >
-        <option value="">Select Category</option>
-        {categories.map((cat) => (
-          <option key={cat} value={cat}>{cat}</option>
-        ))}
-      </select>
-
-        <input
-          type="number"
-          placeholder="Stock Quantity"
-          value={newProduct.stock}
-          onChange={(e) =>
-            setNewProduct({ ...newProduct, stock: e.target.value })
-          }
-        />
-
-        <select
-          value={newProduct.status}
-          onChange={(e) =>
-            setNewProduct({ ...newProduct, status: e.target.value })
-          }
-        >
-          <option>Active</option>
-          <option>Out of Stock</option>
-        </select>
-
-        <input
-          placeholder="Image URL"
-          value={newProduct.image}
-          onChange={(e) =>
-            setNewProduct({ ...newProduct, image: e.target.value })
-          }
-        />
-
-        <button onClick={handleAddProduct}>
-          Add Product
-        </button>
-
+        <h3>{editingProduct ? "Edit Product ✏️" : "Add Product"}</h3>
+        <input placeholder="Name" value={newProduct.name} onChange={e => setNewProduct({ ...newProduct, name: e.target.value })} />
+        <input type="number" placeholder="Price" value={newProduct.price} onChange={e => setNewProduct({ ...newProduct, price: e.target.value })} />
+        <input placeholder="Category" value={newProduct.category} onChange={e => setNewProduct({ ...newProduct, category: e.target.value })} />
+        <input type="number" placeholder="Stock" value={newProduct.stock} onChange={e => setNewProduct({ ...newProduct, stock: e.target.value })} />
+        <input placeholder="Image URL" value={newProduct.image} onChange={e => setNewProduct({ ...newProduct, image: e.target.value })} />
+        {editingProduct ? (
+          <button onClick={handleUpdateProduct}>Update Product</button>
+        ) : (
+          <button onClick={handleAddProduct}>Add Product</button>
+        )}
       </div>
 
-
-      {/* ===== ADD DEAL FORM ===== */}
-<div className="admin-form">
-  <h3>Add Deal 🎯</h3>
-
-  <input
-    placeholder="Deal Title"
-    value={newDeal.title}
-    onChange={(e) =>
-      setNewDeal({ ...newDeal, title: e.target.value })
-    }
-  />
-
-  <input
-    placeholder="Discount Text (Example: Up to 50% Off)"
-    value={newDeal.discount}
-    onChange={(e) =>
-      setNewDeal({ ...newDeal, discount: e.target.value })
-    }
-  />
-
-  <input
-    placeholder="Image URL"
-    value={newDeal.image}
-    onChange={(e) =>
-      setNewDeal({ ...newDeal, image: e.target.value })
-    }
-  />
-
-  <select
-    value={newDeal.category}
-    onChange={(e) =>
-      setNewDeal({ ...newDeal, category: e.target.value })
-    }
-  >
-    <option value="">Select Category</option>
-    {categories.map(cat => (
-      <option key={cat} value={cat}>{cat}</option>
-    ))}
-  </select>
-
-  <button onClick={handleAddDeal}>
-    Add Deal
-  </button>
-</div>
-
-      {/* ===== PRODUCT TABLE ===== */}
+      {/* ================= PRODUCT TABLE ================= */}
+      <h3>Products</h3>
       <table className="admin-table">
         <thead>
           <tr>
@@ -323,245 +205,66 @@ const handleCancel = () => {
             <th>Image</th>
             <th>Name</th>
             <th>Price</th>
-            <th>Stock</th>
-            <th>Status</th>
             <th>Action</th>
           </tr>
         </thead>
-
         <tbody>
-  {filteredProducts.map(product => (
-    <tr key={product.id}>
-
-      <td>{product.id}</td>
-
-      <td>
-        {editingId === product.id ? (
-          <input
-            value={editedProduct.image}
-            onChange={(e) =>
-              setEditedProduct({ ...editedProduct, image: e.target.value })
-            }
-          />
-        ) : (
-          product.image && (
-            <img
-              src={product.image}
-              alt={product.name}
-              width="50"
-            />
-          )
-        )}
-      </td>
-
-      <td>
-        {editingId === product.id ? (
-          <input
-            value={editedProduct.name}
-            onChange={(e) =>
-              setEditedProduct({ ...editedProduct, name: e.target.value })
-            }
-          />
-        ) : (
-          product.name
-        )}
-      </td>
-
-      <td>
-  {editingId === product.id ? (
-    <input
-      type="number"
-      value={editedProduct.price}
-      onChange={(e) =>
-        setEditedProduct({ ...editedProduct, price: e.target.value })
-      }
-    />
-  ) : (
-    <>
-      ₹{new Intl.NumberFormat("en-IN").format(product.price)}
-    </>
-  )}
-</td>
-
-      <td>
-        {editingId === product.id ? (
-          <input
-            type="number"
-            value={editedProduct.stock}
-            onChange={(e) =>
-              setEditedProduct({ ...editedProduct, stock: e.target.value })
-            }
-          />
-        ) : (
-          product.stock
-        )}
-      </td>
-
-      <td>
-        {editingId === product.id ? (
-          <select
-            value={editedProduct.status}
-            onChange={(e) =>
-              setEditedProduct({ ...editedProduct, status: e.target.value })
-            }
-          >
-            <option>Active</option>
-            <option>Out of Stock</option>
-          </select>
-        ) : (
-          product.status
-        )}
-      </td>
-
-      <td>
-        {editingId === product.id ? (
-          <>
-            <button onClick={handleSave}>Save</button>
-            <button onClick={handleCancel} className="cancel-btn">
-              Cancel
-            </button>
-          </>
-        ) : (
-          <>
-            <button onClick={() => handleEdit(product)}>
-              Edit
-            </button>
-
-            <button
-              className="delete-btn"
-              onClick={() => handleDelete(product.id)}
-            >
-              Delete
-            </button>
-
-        
-          </>
-        )}
-      </td>
-
-    </tr>
-  ))}
-</tbody>
+          {products.map(p => (
+            <tr key={p.id}>
+              <td>{p.id}</td>
+              <td><img src={p.image} alt={p.name} width="50" height="50" /></td>
+              <td>{p.name}</td>
+              <td>₹{p.price}</td>
+              <td>
+                <button onClick={() => handleEditProduct(p)}>Edit</button>
+                <button onClick={() => handleDeleteProduct(p.id)}>Delete</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
       </table>
 
+      {/* ================= DEAL FORM ================= */}
+      <div className="admin-form">
+        <h3>{editingDeal ? "Edit Deal ✏️" : "Add Deal 🎯"}</h3>
+        <input placeholder="Title" value={newDeal.title} onChange={e => setNewDeal({ ...newDeal, title: e.target.value })} />
+        <input type="number" placeholder="Discount" value={newDeal.discount} onChange={e => setNewDeal({ ...newDeal, discount: e.target.value })} />
+        <input placeholder="Image URL" value={newDeal.image} onChange={e => setNewDeal({ ...newDeal, image: e.target.value })} />
+        <input placeholder="Category" value={newDeal.category} onChange={e => setNewDeal({ ...newDeal, category: e.target.value })} />
+        {editingDeal ? (
+          <button onClick={handleUpdateDeal}>Update Deal</button>
+        ) : (
+          <button onClick={handleAddDeal}>Add Deal</button>
+        )}
+      </div>
 
-      {/* ===== DEALS LIST SECTION ===== */}
-<h2 style={{ marginTop: "40px" }}>Manage Deals 🎯</h2>
-
-<table className="admin-table">
-  <thead>
-    <tr>
-      <th>ID</th>
-      <th>Image</th>
-      <th>Title</th>
-      <th>Discount</th>
-      <th>Category</th>
-      <th>Action</th>
-    </tr>
-  </thead>
-
-  <tbody>
-    {deals.map(deal => (
-      <tr key={deal.id}>
-
-        <td>{deal.id}</td>
-
-        <td>
-          {editingDealId === deal.id ? (
-            <input
-              value={editedDeal.image}
-              onChange={(e) =>
-                setEditedDeal({ ...editedDeal, image: e.target.value })
-              }
-            />
-          ) : (
-            deal.image && (
-              <img
-                src={deal.image}
-                alt={deal.title}
-                width="60"
-              />
-            )
-          )}
-        </td>
-
-        <td>
-          {editingDealId === deal.id ? (
-            <input
-              value={editedDeal.title}
-              onChange={(e) =>
-                setEditedDeal({ ...editedDeal, title: e.target.value })
-              }
-            />
-          ) : (
-            deal.title
-          )}
-        </td>
-
-        <td>
-          {editingDealId === deal.id ? (
-            <input
-              value={editedDeal.discount}
-              onChange={(e) =>
-                setEditedDeal({ ...editedDeal, discount: e.target.value })
-              }
-            />
-          ) : (
-            deal.discount
-          )}
-        </td>
-
-        <td>
-          {editingDealId === deal.id ? (
-            <select
-              value={editedDeal.category}
-              onChange={(e) =>
-                setEditedDeal({ ...editedDeal, category: e.target.value })
-              }
-            >
-              {categories.map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
-          ) : (
-            deal.category
-          )}
-        </td>
-
-        <td>
-          {editingDealId === deal.id ? (
-            <>
-              <button onClick={handleSaveDeal}>Save</button>
-              <button
-                onClick={handleCancelDeal}
-                className="cancel-btn"
-              >
-                Cancel
-              </button>
-            </>
-          ) : (
-            <>
-              <button onClick={() => handleEditDeal(deal)}>
-                Edit
-              </button>
-
-              <button
-                className="delete-btn"
-                onClick={() => handleDeleteDeal(deal.id)}
-              >
-                Delete
-              </button>
-            </>
-          )}
-        </td>
-
-      </tr>
-    ))}
-  </tbody>
-</table>
-
-      
-
+      {/* ================= DEAL TABLE ================= */}
+      <h3>Deals</h3>
+      <table className="admin-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Image</th>
+            <th>Title</th>
+            <th>Discount</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {deals.map(d => (
+            <tr key={d.id}>
+              <td>{d.id}</td>
+              <td><img src={d.image} alt={d.title} width="50" height="50" /></td>
+              <td>{d.title}</td>
+              <td>{d.discount}</td>
+              <td>
+                <button onClick={() => handleEditDeal(d)}>Edit</button>
+                <button onClick={() => handleDeleteDeal(d.id)}>Delete</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

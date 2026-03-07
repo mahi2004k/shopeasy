@@ -1,42 +1,122 @@
 import "./Cart.css";
 import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 
-export default function Cart({ cartItems, setCartItems }) {
+export default function Cart() {
+
+  const API = "http://localhost:5000";
   const navigate = useNavigate();
 
-  const increaseQty = (index) => {
-    const updated = [...cartItems];
-    updated[index].qty += 1;
-    setCartItems(updated);
+  const [cartItems, setCartItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // ================= LOAD CART =================
+  const loadCart = async () => {
+    try {
+      setLoading(true);
+
+      const res = await fetch(`${API}/cart`);
+      const data = await res.json();
+
+      setCartItems(data);
+
+    } catch (error) {
+      console.error("Failed to load cart:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const decreaseQty = (index) => {
-    const updated = [...cartItems];
+  useEffect(() => {
+    loadCart();
+  }, []);
 
-    if (updated[index].qty > 1) {
-      updated[index].qty -= 1;
-    } else {
-      updated.splice(index, 1); // remove if qty = 1
+  // ================= INCREASE QTY =================
+  const increaseQty = async (item) => {
+
+    try {
+
+      await fetch(`${API}/cart/${item.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ qty: item.qty + 1 })
+      });
+
+      setCartItems(prev =>
+        prev.map(i =>
+          i.id === item.id ? { ...i, qty: i.qty + 1 } : i
+        )
+      );
+
+    } catch (error) {
+      console.error("Error updating quantity:", error);
     }
 
-    setCartItems(updated);
   };
 
-  const removeItem = (index) => {
-    const updated = [...cartItems];
-    updated.splice(index, 1);
-    setCartItems(updated);
+  // ================= DECREASE QTY =================
+  const decreaseQty = async (item) => {
+
+    try {
+
+      if (item.qty <= 1) {
+        removeItem(item.id);
+        return;
+      }
+
+      await fetch(`${API}/cart/${item.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ qty: item.qty - 1 })
+      });
+
+      setCartItems(prev =>
+        prev.map(i =>
+          i.id === item.id ? { ...i, qty: i.qty - 1 } : i
+        )
+      );
+
+    } catch (error) {
+      console.error("Error updating quantity:", error);
+    }
+
   };
 
+  // ================= REMOVE ITEM =================
+  const removeItem = async (id) => {
+
+    try {
+
+      await fetch(`${API}/cart/${id}`, {
+        method: "DELETE"
+      });
+
+      setCartItems(prev => prev.filter(item => item.id !== id));
+
+    } catch (error) {
+      console.error("Error removing item:", error);
+    }
+
+  };
+
+  // ================= TOTAL =================
   const total = cartItems.reduce(
-    (sum, item) =>
-      sum +
-      Number(item.price.replace(/[^0-9]/g, "")) * item.qty,
+    (sum, item) => sum + item.price * item.qty,
     0
   );
 
+  // ================= UI =================
+  if (loading) {
+    return (
+      <div className="cart-page">
+        <h2>Loading Cart...</h2>
+      </div>
+    );
+  }
+
   return (
     <div className="cart-page">
+
       <h2>Your Cart 🛒</h2>
 
       {cartItems.length === 0 ? (
@@ -46,35 +126,55 @@ export default function Cart({ cartItems, setCartItems }) {
 
           {/* LEFT SIDE */}
           <div className="cart-items">
-            {cartItems.map((item, index) => (
-              <div className="cart-card" key={index}>
+
+            {cartItems.map((item) => (
+
+              <div className="cart-card" key={item.id}>
+
                 <img src={item.image} alt={item.name} />
 
                 <div className="cart-info">
+
                   <h4>{item.name}</h4>
-                  <p className="price">{item.price}</p>
+
+                  <p className="price">₹{item.price}</p>
 
                   <div className="cart-actions">
+
                     <div className="qty-control">
-                      <button onClick={() => decreaseQty(index)}>−</button>
+
+                      <button onClick={() => decreaseQty(item)}>
+                        −
+                      </button>
+
                       <span>{item.qty}</span>
-                      <button onClick={() => increaseQty(index)}>+</button>
+
+                      <button onClick={() => increaseQty(item)}>
+                        +
+                      </button>
+
                     </div>
 
                     <button
                       className="remove-btn"
-                      onClick={() => removeItem(index)}
+                      onClick={() => removeItem(item.id)}
                     >
                       Remove
                     </button>
+
                   </div>
+
                 </div>
+
               </div>
+
             ))}
+
           </div>
 
           {/* RIGHT SIDE */}
           <div className="cart-summary">
+
             <h3>Price Details</h3>
 
             <div className="summary-row">
@@ -98,9 +198,12 @@ export default function Cart({ cartItems, setCartItems }) {
             >
               Proceed to Checkout
             </button>
+
           </div>
+
         </div>
       )}
+
     </div>
   );
 }

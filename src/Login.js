@@ -3,63 +3,61 @@ import { useNavigate } from "react-router-dom";
 import "./Login.css";
 
 function Login() {
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const navigate = useNavigate();
 
-  const navigate = useNavigate(); 
-  
-  const handleLogin = () => {
+  const handleLogin = async () => {
+    if (!email || !password) {
+      alert("Enter Email & Password ❌");
+      return;
+    }
 
-  if (!email || !password) {
-    alert("Enter Email & Password ❌");
-    return;
-  }
+    try {
+      // ⭐ Owner/Admin Login
+      if (email === "adminmahi@gmail.com" && password === "AdminMahi0") {
+        localStorage.setItem("isOwner", "true");
+        localStorage.setItem("isLoggedIn", "true");
 
-   // ⭐ OWNER LOGIN
-  if (email === "adminmahi@gmail.com" && password === "AdminMahi0") {
+        alert("Owner Login ✅");
+        navigate("/admin");
+        return;
+      }
 
-  localStorage.setItem("isOwner", "true");
-  localStorage.setItem("isLoggedIn", "true");   // ⭐ ADD THIS
+      // ❗ Remove owner flag if normal user logs in
+      localStorage.removeItem("isOwner");
 
-  alert("Owner Login ✅");
+      // 🔹 Call backend API
+      const response = await fetch("http://localhost:5000/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
 
-  navigate("/admin");
+      const data = await response.json();
 
-  return;
-}
+      if (response.status === 200) {
+        // ✅ Login Successful
+        alert("Login Successful ✅");
 
-// ❗ Remove owner if normal user logs in
-localStorage.removeItem("isOwner");
+        // Optional session flags
+        localStorage.setItem("isLoggedIn", "true");
+        localStorage.setItem("loggedInUser", data.fullName); // get from backend
 
-  // ✅ Get stored user
-  const storedUser = JSON.parse(localStorage.getItem("user"));
-
-  if (!storedUser) {
-    alert("No user found. Please Register First ❌");
-    return;
-  }
-
-  // ✅ Check credentials
-  if (email === storedUser.email && password === storedUser.password) {
-    
-    alert("Login Successful ✅");
-
-    // Optional session flag
-    localStorage.setItem("isLoggedIn", "true");
-
-    localStorage.setItem("loggedInUser", storedUser.fullName);
-
-    navigate("/dashboard");   // 🔥 REDIRECT TO DASHBOARD
-
-  } else {
-    alert("Invalid Email or Password ❌");
-  }
-};
+        navigate("/dashboard");
+      } else {
+        alert(data.message); // e.g., Invalid credentials
+      }
+    } catch (error) {
+      console.error("Login Error:", error);
+      alert("Login Failed ❌");
+    }
+  };
 
   return (
     <div className="login-container">
-
       <h2>Login</h2>
 
       <input
@@ -76,15 +74,12 @@ localStorage.removeItem("isOwner");
         onChange={(e) => setPassword(e.target.value)}
       />
 
-      <button onClick={handleLogin}>
-        Login
-      </button>
+      <button onClick={handleLogin}>Login</button>
 
       <p className="Register-text">
-        Dont have an Account?
-        <span onClick={()=> navigate("/register")}>Register</span>
+        Don't have an Account?{" "}
+        <span onClick={() => navigate("/register")}>Register</span>
       </p>
-
     </div>
   );
 }

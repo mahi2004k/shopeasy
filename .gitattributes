@@ -1,0 +1,13 @@
+# Ensure consistent line endings
+* text=auto
+
+# Force LF for JS, JSX, CSS, HTML, JSON files
+*.js text eol=lf
+*.jsx text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+*.json text eol=lf
+
+# Ignore node_modules and build folders for line ending conversion
+node_modules/** -text
+build/** -text

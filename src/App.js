@@ -13,24 +13,12 @@ import AccountPage from "./AccountPage";
 
 function App() {
 
-  // ✅ PRODUCTS STATE (GLOBAL)
-  const [products, setProducts] = useState(() => {
-    const stored = localStorage.getItem("products");
-    return stored ? JSON.parse(stored) : [];
-  });
-
-  // ✅ SAVE PRODUCTS TO LOCALSTORAGE
-  useEffect(() => {
-    localStorage.setItem("products", JSON.stringify(products));
-  }, [products]);
-
-  // ✅ CART STATE
+  // ✅ CART STATE (keep localStorage for cart)
   const [cartItems, setCartItems] = useState(() => {
     const storedCart = localStorage.getItem("cart");
     return storedCart ? JSON.parse(storedCart) : [];
   });
 
-  // ✅ SAVE CART
   useEffect(() => {
     localStorage.setItem("cart", JSON.stringify(cartItems));
   }, [cartItems]);
@@ -42,20 +30,21 @@ function App() {
 
       <Route path="/register" element={<Register />} />
 
+      {/* ✅ Dashboard will fetch products from backend */}
       <Route
         path="/dashboard"
         element={
           <Dashboard
-            products={products}
             cartItems={cartItems}
             setCartItems={setCartItems}
           />
         }
       />
 
+      {/* ✅ Deal by ID (important change) */}
       <Route
-        path="/deals"
-        element={<DealsPage products={products} />}
+        path="/deal/:id"
+        element={<DealsPage />}
       />
 
       <Route
@@ -73,15 +62,12 @@ function App() {
         element={<Checkout cartItems={cartItems} />}
       />
 
-      {/* ⭐ ADMIN PANEL ROUTE */}
+      {/* ⭐ ADMIN PANEL */}
       <Route
         path="/admin"
         element={
           <OwnerRoute>
-            <AdminPanel
-              products={products}
-              setProducts={setProducts}
-            />
+            <AdminPanel />
           </OwnerRoute>
         }
       />

@@ -20,6 +20,38 @@ export default function Checkout({ cartItems }) {
     0
   );
 
+  // ======================
+  // PLACE ORDER FUNCTION
+  // ======================
+  const handlePlaceOrder = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/orders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          items: items,
+          total: total,
+          paymentMethod: paymentMethod
+        })
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        alert("Order placed successfully ✅");
+        navigate("/success");
+      } else {
+        alert(data.message);
+      }
+
+    } catch (error) {
+      console.error(error);
+      alert("Order failed ❌");
+    }
+  };
+
   if (!items.length) {
     return <h2>Your cart is empty</h2>;
   }
@@ -60,38 +92,38 @@ export default function Checkout({ cartItems }) {
           </div>
 
           <div className="checkout-card">
-  <h3>Payment Method</h3>
+            <h3>Payment Method</h3>
 
-  <label className={`payment-option ${paymentMethod === "card" ? "active" : ""}`}>
-    <input
-      type="radio"
-      name="payment"
-      checked={paymentMethod === "card"}
-      onChange={() => setPaymentMethod("card")}
-    />
-    Credit / Debit Card
-  </label>
+            <label className={`payment-option ${paymentMethod === "card" ? "active" : ""}`}>
+              <input
+                type="radio"
+                name="payment"
+                checked={paymentMethod === "card"}
+                onChange={() => setPaymentMethod("card")}
+              />
+              Credit / Debit Card
+            </label>
 
-  <label className={`payment-option ${paymentMethod === "upi" ? "active" : ""}`}>
-    <input
-      type="radio"
-      name="payment"
-      checked={paymentMethod === "upi"}
-      onChange={() => setPaymentMethod("upi")}
-    />
-    UPI Payment
-  </label>
+            <label className={`payment-option ${paymentMethod === "upi" ? "active" : ""}`}>
+              <input
+                type="radio"
+                name="payment"
+                checked={paymentMethod === "upi"}
+                onChange={() => setPaymentMethod("upi")}
+              />
+              UPI Payment
+            </label>
 
-  <label className={`payment-option ${paymentMethod === "cod" ? "active" : ""}`}>
-    <input
-      type="radio"
-      name="payment"
-      checked={paymentMethod === "cod"}
-      onChange={() => setPaymentMethod("cod")}
-    />
-    Cash on Delivery
-  </label>
-</div>
+            <label className={`payment-option ${paymentMethod === "cod" ? "active" : ""}`}>
+              <input
+                type="radio"
+                name="payment"
+                checked={paymentMethod === "cod"}
+                onChange={() => setPaymentMethod("cod")}
+              />
+              Cash on Delivery
+            </label>
+          </div>
 
         </div>
 
@@ -115,14 +147,11 @@ export default function Checkout({ cartItems }) {
             </div>
 
             <button
-  className="place-order"
-  onClick={() => {
-    alert(`Payment Method: ${paymentMethod}`);
-    navigate("/success");
-  }}
->
-  Place Order
-</button>
+              className="place-order"
+              onClick={handlePlaceOrder}
+            >
+              Place Order
+            </button>
 
           </div>
         </div>

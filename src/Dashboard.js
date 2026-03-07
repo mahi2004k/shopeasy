@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-
 import {
   Search,
   User,
@@ -13,16 +12,18 @@ import { useNavigate } from "react-router-dom";
 import "./Dashboard.css";
 import DealsSlider from "./DealsSlider";
 
-
 export default function Dashboard({ cartItems, setCartItems }) {
+
+  const navigate = useNavigate();
+  const API = "http://localhost:5000";
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [loggedUser, setLoggedUser] = useState("");
-  
-
-  const navigate = useNavigate();
+  const [products, setProducts] = useState([]);
+  const [deals, setDeals] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const categories = [
     "Fashion", "Electronics", "Furniture", "Stationery",
@@ -30,42 +31,122 @@ export default function Dashboard({ cartItems, setCartItems }) {
     "Books", "Toys", "Sports", "Automobile",
   ];
 
-  const [deals] = useState(() => {
-  return JSON.parse(localStorage.getItem("deals")) || [];
-});
+  // 🔐 LOGIN CHECK
+  useEffect(() => {
+    const user = localStorage.getItem("loggedInUser");
+    const isLoggedIn = localStorage.getItem("isLoggedIn");
 
-const [products] = useState(() => {
-  return JSON.parse(localStorage.getItem("products")) || [];
-});
+    if (!user || !isLoggedIn) {
+      navigate("/");
+    } else {
+      setLoggedUser(user);
+    }
+  }, [navigate]);
 
-const filteredProducts =
-  selectedCategory === "All"
-    ? products
-    : products.filter(
-        product => product.category === selectedCategory
-      );
+  // 📦 FETCH PRODUCTS + DEALS
+  useEffect(() => {
 
-     useEffect(() => {
-  const storedUser = localStorage.getItem("loggedInUser");
+    const fetchData = async () => {
 
-  if (storedUser) {
-    setLoggedUser(storedUser);
+      try {
+
+        const [productRes, dealRes] = await Promise.all([
+          fetch(`${API}/products`),
+          fetch(`${API}/deals`)
+        ]);
+
+        const productData = await productRes.json();
+        const dealData = await dealRes.json();
+
+        const normalizedDeals = dealData.map(d => ({
+          id: d.id,
+          title: d.title,
+          discount: d.discount,
+          image: d.image || "https://via.placeholder.com/150",
+          category: d.category || "General"
+        }));
+
+        setProducts(productData);
+        setDeals(normalizedDeals);
+
+      } catch (err) {
+        console.error("Fetch error:", err);
+      } finally {
+        setLoading(false);
+      }
+
+    };
+
+    fetchData();
+
+  }, []);
+
+  // 🔎 FILTER PRODUCTS
+  const filteredProducts =
+    selectedCategory === "All"
+      ? products
+      : products.filter(p => p.category === selectedCategory);
+
+  // 🚪 LOGOUT
+  const handleLogout = () => {
+    localStorage.removeItem("loggedInUser");
+    localStorage.removeItem("isLoggedIn");
+    navigate("/");
+  };
+
+  // 🛒 ADD TO CART API
+  const addToCart = async (product) => {
+
+    try {
+
+      await fetch(`${API}/cart`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          product_id: product.id,
+          name: product.name,
+          price: product.price,
+          image: product.image
+        })
+      });
+
+      // update frontend cart state
+      setCartItems(prev => {
+        const existing = prev.find(p => p.id === product.id);
+
+        if (existing) {
+          return prev.map(p =>
+            p.id === product.id
+              ? { ...p, qty: p.qty + 1 }
+              : p
+          );
+        }
+
+        return [...prev, { ...product, qty: 1 }];
+      });
+
+      alert("Added to cart 🛒");
+
+    } catch (error) {
+      console.error("Cart error:", error);
+    }
+
+  };
+
+  if (loading) {
+    return <div style={{ padding: "40px" }}>Loading products...</div>;
   }
-}, []);
 
   return (
     <div className="dashboard">
 
-      {/* Navbar */}
+      {/* NAVBAR */}
       <div className="navbar">
+
         <div className="nav-left">
-
-          <Menu
-            size={26}
-            className="menu-icon"
-            onClick={() => setMenuOpen(true)}
-          />
-
+          <Menu size={26} className="menu-icon" onClick={() => setMenuOpen(true)} />
           <h1 className="logo">ShopEasy</h1>
 
           <div className="search-box">
@@ -74,13 +155,9 @@ const filteredProducts =
           </div>
         </div>
 
-        {/* Dropdown */}
         <div className="nav-right">
 
-          <div
-            className="dropdown-trigger"
-            onClick={() => setDropdownOpen(!dropdownOpen)}
-          >
+          <div className="dropdown-trigger" onClick={() => setDropdownOpen(!dropdownOpen)}>
             Menu <ChevronDown size={18} />
           </div>
 
@@ -93,158 +170,107 @@ const filteredProducts =
                 exit={{ opacity: 0, y: -10 }}
               >
                 <div className="dropdown-item">
-                  <MapPin size={16} />
-                  Deliver to Mumbai
+                  <MapPin size={16} /> Deliver to India
                 </div>
 
-               <div
-                className="dropdown-item"
-                onClick={() => navigate("/account")}
-              >
-                <User size={16} />
-                Account
-              </div>
+                <div className="dropdown-item" onClick={() => navigate("/account")}>
+                  <User size={16} /> Account
+                </div>
 
-                <div
-                className="dropdown-item"
-                onClick={() => navigate("/cart")}
-                >
-                 Cart
-                <span className="badge">{cartItems.length}</span>
-              </div>
+                <div className="dropdown-item" onClick={() => navigate("/cart")}>
+                  Cart <span className="badge">{cartItems.length}</span>
+                </div>
+
+                <div className="dropdown-item logout" onClick={handleLogout}>
+                  Logout
+                </div>
+
               </motion.div>
             )}
           </AnimatePresence>
 
         </div>
+
       </div>
 
-      {/* Drawer */}
-      <AnimatePresence>
-        {menuOpen && (
-          <motion.div
-            className="menu-overlay"
-            onClick={() => setMenuOpen(false)}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <motion.div
-              className="menu-drawer"
-              initial={{ x: -320 }}
-              animate={{ x: 0 }}
-              exit={{ x: -320 }}
-              transition={{ duration: 0.35 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="menu-header">
-                <h3>Hello, {loggedUser || "User"} 👋</h3>
-                <X size={22} onClick={() => setMenuOpen(false)} />
-              </div>
-
-              <div className="menu-item">Your Orders</div>
-              <div className="menu-item">Wishlist</div>
-              <div className="menu-item">Rewards</div>
-              <div className="menu-item logout">Logout</div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Categories */}
+      {/* CATEGORIES */}
       <div className="categories">
-  <span
-    className={`category-pill ${selectedCategory === "All" ? "active" : ""}`}
-    onClick={() => setSelectedCategory("All")}
-  >
-    All
-  </span>
 
-  {categories.map(cat => (
-    <span
-      key={cat}
-      className={`category-pill ${selectedCategory === cat ? "active" : ""}`}
-      onClick={() => setSelectedCategory(cat)}
-    >
-      {cat}
-    </span>
-  ))}
-</div>
+        <span
+          className={`category-pill ${selectedCategory === "All" ? "active" : ""}`}
+          onClick={() => setSelectedCategory("All")}
+        >
+          All
+        </span>
 
-      {/* Hero */}
-      {selectedCategory === "All" && (
-  <motion.div
-    initial={{ opacity: 0, y: 30 }}
-    animate={{ opacity: 1, y: 0 }}
-    className="hero"
-  >
-    <h2>Mega Sale is Live 🔥</h2>
-    <p>Best Deals | Top Brands | Huge Discounts</p>
-    <button>Shop Now</button>
-  </motion.div>
-)}
+        {categories.map(cat => (
+          <span
+            key={cat}
+            className={`category-pill ${selectedCategory === cat ? "active" : ""}`}
+            onClick={() => setSelectedCategory(cat)}
+          >
+            {cat}
+          </span>
+        ))}
 
-      {/* Deals */}
-      {/* Deals Slider */}
+      </div>
+
+      {/* DEALS */}
       {selectedCategory === "All" && (
         <div className="section">
           <h3>Today's Deals</h3>
-
-          <DealsSlider deals={deals} products={products} />
-
+          <DealsSlider deals={deals} />
         </div>
       )}
 
-      {/* ⭐ MIXED PRODUCTS SECTION */}
+      {/* PRODUCTS */}
       <div className="section">
+
         <h3>Recommended For You ✨</h3>
 
         <div className="products-grid">
-  {filteredProducts.map(product => (
-    <motion.div whileHover={{ scale: 1.05 }} key={product.id}>
-      <div className="product-card">
-        <img src={product.image} alt={product.name} />
 
-        <div className="product-info">
-          <h4>{product.name}</h4>
-          <p>₹{Number(product.price).toLocaleString("en-IN")}</p>
+          {filteredProducts.map(product => (
 
-          <button
-  className="cart-btn"
-  onClick={() => {
-    setCartItems(prev => {
-      const existing = prev.find(p => p.id === product.id);
+            <motion.div whileHover={{ scale: 1.05 }} key={product.id}>
 
-      if (existing) {
-        return prev.map(p =>
-          p.id === product.id
-            ? { ...p, qty: p.qty + 1 }
-            : p
-        );
-      }
+              <div className="product-card">
 
-      return [...prev, { ...product, qty: 1 }];
-    });
-  }}
->
-  Add to Cart
-</button>
+                <img
+                  src={product.image || "https://via.placeholder.com/200"}
+                  alt={product.name}
+                />
 
-          <button
-          className="buy-btn"
-          onClick={()=>
-            navigate("/checkout", { state: { buyNow: product}})
-          }
-          >
-            Buy Now
-          </button>
+                <div className="product-info">
+
+                  <h4>{product.name}</h4>
+
+                  <p>₹{Number(product.price).toLocaleString("en-IN")}</p>
+
+                  <button
+                    className="cart-btn"
+                    onClick={() => addToCart(product)}
+                  >
+                    Add to Cart
+                  </button>
+
+                  <button
+                    className="buy-btn"
+                    onClick={() => navigate("/checkout", { state: { buyNow: product } })}
+                  >
+                    Buy Now
+                  </button>
+
+                </div>
+
+              </div>
+
+            </motion.div>
+
+          ))}
+
         </div>
-      </div>
-    </motion.div>
-  ))}
 
-          
-        </div>
       </div>
 
     </div>
