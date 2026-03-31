@@ -13,7 +13,7 @@ import AccountPage from "./AccountPage";
 
 function App() {
 
-  // ✅ CART STATE (keep localStorage for cart)
+  // ✅ CART STATE (localStorage)
   const [cartItems, setCartItems] = useState(() => {
     const storedCart = localStorage.getItem("cart");
     return storedCart ? JSON.parse(storedCart) : [];
@@ -26,11 +26,11 @@ function App() {
   return (
     <Routes>
 
+      {/* 🔐 AUTH */}
       <Route path="/" element={<Login />} />
-
       <Route path="/register" element={<Register />} />
 
-      {/* ✅ Dashboard will fetch products from backend */}
+      {/* 🏠 DASHBOARD */}
       <Route
         path="/dashboard"
         element={
@@ -41,12 +41,13 @@ function App() {
         }
       />
 
-      {/* ✅ Deal by ID (important change) */}
+      {/* 🔥 DEALS PAGE (✅ FIXED ROUTE) */}
       <Route
-        path="/deal/:id"
+        path="/deals/:id"
         element={<DealsPage />}
       />
 
+      {/* 🛒 CART */}
       <Route
         path="/cart"
         element={
@@ -57,6 +58,7 @@ function App() {
         }
       />
 
+      {/* 💳 CHECKOUT */}
       <Route
         path="/checkout"
         element={<Checkout cartItems={cartItems} />}
@@ -72,6 +74,7 @@ function App() {
         }
       />
 
+      {/* 👤 ACCOUNT */}
       <Route
         path="/account"
         element={<AccountPage />}

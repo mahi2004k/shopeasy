@@ -115,95 +115,93 @@ export default function Cart() {
   }
 
   return (
-    <div className="cart-page">
+  <div className="cart-page">
 
-      <h2>Your Cart 🛒</h2>
+    <h2 className="cart-title">Shopping Cart</h2>
 
-      {cartItems.length === 0 ? (
-        <p className="empty-cart">Cart is Empty</p>
-      ) : (
-        <div className="cart-container">
+    {cartItems.length === 0 ? (
+      <p className="empty-cart">Your Amazon Cart is empty</p>
+    ) : (
+      <div className="cart-layout">
 
-          {/* LEFT SIDE */}
-          <div className="cart-items">
+        {/* LEFT: ITEMS */}
+        <div className="cart-items">
 
-            {cartItems.map((item) => (
+          {cartItems.map(item => (
+            <div className="cart-item" key={item.id}>
 
-              <div className="cart-card" key={item.id}>
+              <img src={item.image} alt={item.name} />
 
-                <img src={item.image} alt={item.name} />
+              <div className="item-details">
 
-                <div className="cart-info">
+                <h3 className="item-name">{item.name}</h3>
 
-                  <h4>{item.name}</h4>
+                <p className="seller">Sold by: Tech Store</p>
 
-                  <p className="price">₹{item.price}</p>
+                <p className="stock">In stock</p>
 
-                  <div className="cart-actions">
+                <p className="delivery">
+                  FREE delivery by <b>Tomorrow</b>
+                </p>
 
-                    <div className="qty-control">
+                <p className="price">₹{item.price}</p>
 
-                      <button onClick={() => decreaseQty(item)}>
-                        −
-                      </button>
+                <div className="item-actions">
 
-                      <span>{item.qty}</span>
-
-                      <button onClick={() => increaseQty(item)}>
-                        +
-                      </button>
-
-                    </div>
-
-                    <button
-                      className="remove-btn"
-                      onClick={() => removeItem(item.id)}
-                    >
-                      Remove
-                    </button>
-
+                  <div className="qty-box">
+                    <button onClick={() => decreaseQty(item)}>-</button>
+                    <span>{item.qty}</span>
+                    <button onClick={() => increaseQty(item)}>+</button>
                   </div>
+
+                  <button
+                    className="remove"
+                    onClick={() => removeItem(item.id)}
+                  >
+                    Delete
+                  </button>
 
                 </div>
 
               </div>
 
-            ))}
-
-          </div>
-
-          {/* RIGHT SIDE */}
-          <div className="cart-summary">
-
-            <h3>Price Details</h3>
-
-            <div className="summary-row">
-              <span>Items ({cartItems.length})</span>
-              <span>₹{total.toLocaleString()}</span>
             </div>
-
-            <div className="summary-row">
-              <span>Delivery</span>
-              <span className="free">FREE</span>
-            </div>
-
-            <div className="summary-total">
-              <span>Total Amount</span>
-              <span>₹{total.toLocaleString()}</span>
-            </div>
-
-            <button
-              className="checkout-btn"
-              onClick={() => navigate("/checkout")}
-            >
-              Proceed to Checkout
-            </button>
-
-          </div>
+          ))}
 
         </div>
-      )}
 
-    </div>
-  );
+        {/* RIGHT: SUMMARY */}
+        <div className="cart-summary">
+
+          <h3>Order Summary</h3>
+
+          <div className="summary-row">
+            <span>Items ({cartItems.length})</span>
+            <span>₹{total.toLocaleString()}</span>
+          </div>
+
+          <div className="summary-row">
+            <span>Delivery</span>
+            <span>FREE</span>
+          </div>
+
+          <div className="summary-total">
+            <span><b>Order Total</b></span>
+            <span><b>₹{total.toLocaleString()}</b></span>
+          </div>
+
+          <button
+            className="checkout-btn"
+            onClick={() => navigate("/checkout")}
+          >
+            Proceed to Buy
+          </button>
+
+        </div>
+
+      </div>
+    )}
+
+  </div>
+);
 }

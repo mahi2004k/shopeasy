@@ -4,8 +4,7 @@ import {
   User,
   MapPin,
   Menu,
-  X,
-  ChevronDown
+  X
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -18,7 +17,6 @@ export default function Dashboard({ cartItems, setCartItems }) {
   const API = "http://localhost:5000";
 
   const [menuOpen, setMenuOpen] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [loggedUser, setLoggedUser] = useState("");
   const [products, setProducts] = useState([]);
@@ -43,13 +41,10 @@ export default function Dashboard({ cartItems, setCartItems }) {
     }
   }, [navigate]);
 
-  // 📦 FETCH PRODUCTS + DEALS
+  // 📦 FETCH DATA
   useEffect(() => {
-
     const fetchData = async () => {
-
       try {
-
         const [productRes, dealRes] = await Promise.all([
           fetch(`${API}/products`),
           fetch(`${API}/deals`)
@@ -74,11 +69,9 @@ export default function Dashboard({ cartItems, setCartItems }) {
       } finally {
         setLoading(false);
       }
-
     };
 
     fetchData();
-
   }, []);
 
   // 🔎 FILTER PRODUCTS
@@ -94,11 +87,9 @@ export default function Dashboard({ cartItems, setCartItems }) {
     navigate("/");
   };
 
-  // 🛒 ADD TO CART API
+  // 🛒 ADD TO CART (FIXED)
   const addToCart = async (product) => {
-
     try {
-
       await fetch(`${API}/cart`, {
         method: "POST",
         headers: {
@@ -112,27 +103,24 @@ export default function Dashboard({ cartItems, setCartItems }) {
         })
       });
 
-      // update frontend cart state
+      // ✅ Proper state update (ONLY ONCE)
       setCartItems(prev => {
-        const existing = prev.find(p => p.id === product.id);
+        const existing = prev.find(item => item.id === product.id);
 
         if (existing) {
-          return prev.map(p =>
-            p.id === product.id
-              ? { ...p, qty: p.qty + 1 }
-              : p
+          return prev.map(item =>
+            item.id === product.id
+              ? { ...item, qty: item.qty + 1 }
+              : item
           );
         }
 
         return [...prev, { ...product, qty: 1 }];
       });
 
-      alert("Added to cart 🛒");
-
     } catch (error) {
       console.error("Cart error:", error);
     }
-
   };
 
   if (loading) {
@@ -147,6 +135,7 @@ export default function Dashboard({ cartItems, setCartItems }) {
 
         <div className="nav-left">
           <Menu size={26} className="menu-icon" onClick={() => setMenuOpen(true)} />
+
           <h1 className="logo">ShopEasy</h1>
 
           <div className="search-box">
@@ -155,47 +144,75 @@ export default function Dashboard({ cartItems, setCartItems }) {
           </div>
         </div>
 
-        <div className="nav-right">
+        <div className="nav-right-horizontal">
 
-          <div className="dropdown-trigger" onClick={() => setDropdownOpen(!dropdownOpen)}>
-            Menu <ChevronDown size={18} />
+          <div className="nav-item">
+            <MapPin size={16} />
+            <span>Deliver to India</span>
           </div>
 
-          <AnimatePresence>
-            {dropdownOpen && (
-              <motion.div
-                className="dropdown-menu"
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-              >
-                <div className="dropdown-item">
-                  <MapPin size={16} /> Deliver to India
-                </div>
+          <div className="nav-item" onClick={() => navigate("/account")}>
+            <User size={16} />
+            <span>Account</span>
+          </div>
 
-                <div className="dropdown-item" onClick={() => navigate("/account")}>
-                  <User size={16} /> Account
-                </div>
-
-                <div className="dropdown-item" onClick={() => navigate("/cart")}>
-                  Cart <span className="badge">{cartItems.length}</span>
-                </div>
-
-                <div className="dropdown-item logout" onClick={handleLogout}>
-                  Logout
-                </div>
-
-              </motion.div>
-            )}
-          </AnimatePresence>
+          <div className="nav-item cart" onClick={() => navigate("/cart")}>
+            🛒
+            <span>Cart</span>
+            <span className="badge">
+              {cartItems?.reduce((sum, item) => sum + (item.qty || 0), 0)}
+            </span>
+          </div>
 
         </div>
-
       </div>
+
+      {/* DRAWER */}
+      <AnimatePresence>
+        {menuOpen && (
+          <>
+            <motion.div
+              className="menu-overlay"
+              onClick={() => setMenuOpen(false)}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            />
+
+            <motion.div
+              className="menu-drawer"
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "tween" }}
+            >
+              <div className="menu-header">
+                <h3>Hello, {loggedUser}</h3>
+                <X onClick={() => setMenuOpen(false)} />
+              </div>
+
+              <div className="menu-item" onClick={() => navigate("/account")}>
+                👤 Your Account
+              </div>
+
+              <div className="menu-item" onClick={() => navigate("/orders")}>
+                📦 Your Orders
+              </div>
+
+              <div className="menu-item" onClick={() => navigate("/cart")}>
+                🛒 Your Cart
+              </div>
+
+              <div className="menu-item logout" onClick={handleLogout}>
+                🚪 Logout
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* CATEGORIES */}
       <div className="categories">
-
         <span
           className={`category-pill ${selectedCategory === "All" ? "active" : ""}`}
           onClick={() => setSelectedCategory("All")}
@@ -212,7 +229,6 @@ export default function Dashboard({ cartItems, setCartItems }) {
             {cat}
           </span>
         ))}
-
       </div>
 
       {/* DEALS */}
@@ -225,13 +241,11 @@ export default function Dashboard({ cartItems, setCartItems }) {
 
       {/* PRODUCTS */}
       <div className="section">
-
         <h3>Recommended For You ✨</h3>
 
         <div className="products-grid">
 
           {filteredProducts.map(product => (
-
             <motion.div whileHover={{ scale: 1.05 }} key={product.id}>
 
               <div className="product-card">
@@ -256,7 +270,9 @@ export default function Dashboard({ cartItems, setCartItems }) {
 
                   <button
                     className="buy-btn"
-                    onClick={() => navigate("/checkout", { state: { buyNow: product } })}
+                    onClick={() =>
+                      navigate("/checkout", { state: { buyNow: product } })
+                    }
                   >
                     Buy Now
                   </button>
@@ -266,11 +282,9 @@ export default function Dashboard({ cartItems, setCartItems }) {
               </div>
 
             </motion.div>
-
           ))}
 
         </div>
-
       </div>
 
     </div>

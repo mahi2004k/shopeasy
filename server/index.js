@@ -152,19 +152,138 @@ app.delete("/products/:id", (req, res) => {
 
 });
 
-
 // =====================
 // DEALS
 // =====================
 
+// ✅ GET ALL DEALS
 app.get("/deals", (req, res) => {
 
   db.query("SELECT * FROM deals ORDER BY id DESC", (err, results) => {
+
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ message: "Error fetching deals ❌" });
+    }
+
     res.json(results);
+
   });
 
 });
 
+
+// ✅ GET SINGLE DEAL
+app.get("/deals/:id", (req, res) => {
+
+  const dealId = req.params.id;
+
+  db.query(
+    "SELECT * FROM deals WHERE id = ?",
+    [dealId],
+    (err, results) => {
+
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ message: "Database error ❌" });
+      }
+
+      if (results.length === 0) {
+        return res.status(404).json({ message: "Deal not found ❌" });
+      }
+
+      res.json(results[0]);
+
+    }
+  );
+
+});
+
+
+// ✅ ADD DEAL (🔥 FIX FOR YOUR ERROR)
+app.post("/deals", (req, res) => {
+
+  const { title, discount, image, category } = req.body;
+
+  if (!title || !discount) {
+    return res.status(400).json({ message: "Title & Discount required ❌" });
+  }
+
+  db.query(
+    "INSERT INTO deals (title, discount, image, category) VALUES (?,?,?,?)",
+    [title, discount, image || "", category || ""],
+    (err, result) => {
+
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ message: "Insert failed ❌" });
+      }
+
+      res.json({
+        id: result.insertId,
+        title,
+        discount,
+        image,
+        category
+      });
+
+    }
+  );
+
+});
+
+
+// ✅ UPDATE DEAL
+app.put("/deals/:id", (req, res) => {
+
+  const { title, discount, image, category } = req.body;
+  const dealId = req.params.id;
+
+  db.query(
+    "UPDATE deals SET title=?, discount=?, image=?, category=? WHERE id=?",
+    [title, discount, image, category, dealId],
+    (err) => {
+
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ message: "Update failed ❌" });
+      }
+
+      res.json({
+        id: dealId,
+        title,
+        discount,
+        image,
+        category
+      });
+
+    }
+  );
+
+});
+
+
+// ✅ DELETE DEAL
+app.delete("/deals/:id", (req, res) => {
+
+  const dealId = req.params.id;
+
+  db.query(
+    "DELETE FROM deals WHERE id=?",
+    [dealId],
+    (err) => {
+
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ message: "Delete failed ❌" });
+      }
+
+      res.json({ message: "Deal deleted ✅" });
+
+    }
+  );
+
+});
 
 // =====================
 // CART
@@ -302,6 +421,8 @@ app.post("/orders", (req, res) => {
   );
 
 });
+
+
 
 
 // =====================
