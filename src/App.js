@@ -1,5 +1,5 @@
 import { Routes, Route } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { CartProvider } from "./CartContext";
 
 import Register from "./Register";
 import Login from "./Login";
@@ -12,75 +12,43 @@ import OwnerRoute from "./OwnerRoute";
 import AccountPage from "./AccountPage";
 
 function App() {
-
-  // ✅ CART STATE (localStorage)
-  const [cartItems, setCartItems] = useState(() => {
-    const storedCart = localStorage.getItem("cart");
-    return storedCart ? JSON.parse(storedCart) : [];
-  });
-
-  useEffect(() => {
-    localStorage.setItem("cart", JSON.stringify(cartItems));
-  }, [cartItems]);
-
   return (
-    <Routes>
+    <CartProvider>
 
-      {/* 🔐 AUTH */}
-      <Route path="/" element={<Login />} />
-      <Route path="/register" element={<Register />} />
+      <Routes>
 
-      {/* 🏠 DASHBOARD */}
-      <Route
-        path="/dashboard"
-        element={
-          <Dashboard
-            cartItems={cartItems}
-            setCartItems={setCartItems}
-          />
-        }
-      />
+        {/* 🔐 AUTH */}
+        <Route path="/" element={<Login />} />
+        <Route path="/register" element={<Register />} />
 
-      {/* 🔥 DEALS PAGE (✅ FIXED ROUTE) */}
-      <Route
-        path="/deals/:id"
-        element={<DealsPage />}
-      />
+        {/* 🏠 DASHBOARD */}
+        <Route path="/dashboard" element={<Dashboard />} />
 
-      {/* 🛒 CART */}
-      <Route
-        path="/cart"
-        element={
-          <Cart
-            cartItems={cartItems}
-            setCartItems={setCartItems}
-          />
-        }
-      />
+        {/* 🔥 DEALS */}
+        <Route path="/deals/:id" element={<DealsPage />} />
 
-      {/* 💳 CHECKOUT */}
-      <Route
-        path="/checkout"
-        element={<Checkout cartItems={cartItems} />}
-      />
+        {/* 🛒 CART */}
+        <Route path="/cart" element={<Cart />} />
 
-      {/* ⭐ ADMIN PANEL */}
-      <Route
-        path="/admin"
-        element={
-          <OwnerRoute>
-            <AdminPanel />
-          </OwnerRoute>
-        }
-      />
+        {/* 💳 CHECKOUT */}
+        <Route path="/checkout" element={<Checkout />} />
 
-      {/* 👤 ACCOUNT */}
-      <Route
-        path="/account"
-        element={<AccountPage />}
-      />
+        {/* ⭐ ADMIN */}
+        <Route
+          path="/admin"
+          element={
+            <OwnerRoute>
+              <AdminPanel />
+            </OwnerRoute>
+          }
+        />
 
-    </Routes>
+        {/* 👤 ACCOUNT */}
+        <Route path="/account" element={<AccountPage />} />
+
+      </Routes>
+
+    </CartProvider>
   );
 }
 

@@ -12,6 +12,8 @@ function Register() {
     dob: ""
   });
 
+  const [showPassword, setShowPassword] = useState(false);
+
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -22,15 +24,19 @@ function Register() {
   };
 
   const handleRegister = async () => {
-    // ✅ Basic validation
-    if (!formData.firstName || !formData.lastName || !formData.email ||
-        !formData.password || !formData.mobNo || !formData.dob) {
+    if (
+      !formData.firstName ||
+      !formData.lastName ||
+      !formData.email ||
+      !formData.password ||
+      !formData.mobNo ||
+      !formData.dob
+    ) {
       alert("All fields are required ❌");
       return;
     }
 
     try {
-      // ✅ Send data to backend
       const response = await fetch("http://localhost:5000/register", {
         method: "POST",
         headers: {
@@ -42,73 +48,51 @@ function Register() {
       const data = await response.json();
 
       if (response.status === 201) {
-        alert(data.message); // "User Registered Successfully ✅"
-        navigate("/");       // redirect to login
+        alert(data.message);
+        navigate("/");
       } else {
-        alert(data.message); // show error message from backend
+        alert(data.message);
       }
-
     } catch (error) {
-      console.error("Error:", error);
+      console.error(error);
       alert("Registration Failed ❌");
     }
   };
 
   return (
-    <div className="register-container">
+    <div className="register-wrapper">
+      <div className="register-container">
+        <h2>Create Account 🚀</h2>
 
-      <h2>Register</h2>
+        <div className="input-row">
+          <input name="firstName" placeholder="First Name" onChange={handleChange} />
+          <input name="lastName" placeholder="Last Name" onChange={handleChange} />
+        </div>
 
-      <input
-        type="text"
-        name="firstName"
-        placeholder="First Name"
-        onChange={handleChange}
-      />
+        <input type="email" name="email" placeholder="Email" onChange={handleChange} />
 
-      <input
-        type="text"
-        name="lastName"
-        placeholder="Last Name"
-        onChange={handleChange}
-      />
+        <div className="password-box">
+          <input
+            type={showPassword ? "text" : "password"}
+            name="password"
+            placeholder="Password"
+            onChange={handleChange}
+          />
+          <span onClick={() => setShowPassword(!showPassword)}>
+            {showPassword ? "🙈" : "👁"}
+          </span>
+        </div>
 
-      <input
-        type="email"
-        name="email"
-        placeholder="Email"
-        onChange={handleChange}
-      />
+        <input name="mobNo" placeholder="Mobile Number" onChange={handleChange} />
+        <input type="date" name="dob" onChange={handleChange} />
 
-      <input
-        type="password"
-        name="password"
-        placeholder="Password"
-        onChange={handleChange}
-      />
+        <button onClick={handleRegister}>Register</button>
 
-      <input
-        type="text"
-        name="mobNo"
-        placeholder="Mobile Number"
-        onChange={handleChange}
-      />
-
-      <input
-        type="date"
-        name="dob"
-        onChange={handleChange}
-      />
-
-      <button onClick={handleRegister}>
-        Register
-      </button>
-
-      <p className="Login-text">
-        Already have an Account?{" "}
-        <span onClick={() => navigate("/")}>Login</span>
-      </p>
-
+        <p className="Login-text">
+          Already have an Account?{" "}
+          <span onClick={() => navigate("/")}>Login</span>
+        </p>
+      </div>
     </div>
   );
 }

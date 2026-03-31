@@ -5,6 +5,8 @@ import "./Login.css";
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+
   const navigate = useNavigate();
 
   const handleLogin = async () => {
@@ -14,7 +16,7 @@ function Login() {
     }
 
     try {
-      // ⭐ Owner/Admin Login
+      // ⭐ Admin Login
       if (email === "adminmahi@gmail.com" && password === "AdminMahi0") {
         localStorage.setItem("isOwner", "true");
         localStorage.setItem("isLoggedIn", "true");
@@ -24,10 +26,8 @@ function Login() {
         return;
       }
 
-      // ❗ Remove owner flag if normal user logs in
       localStorage.removeItem("isOwner");
 
-      // 🔹 Call backend API
       const response = await fetch("http://localhost:5000/login", {
         method: "POST",
         headers: {
@@ -39,16 +39,14 @@ function Login() {
       const data = await response.json();
 
       if (response.status === 200) {
-        // ✅ Login Successful
         alert("Login Successful ✅");
 
-        // Optional session flags
         localStorage.setItem("isLoggedIn", "true");
-        localStorage.setItem("loggedInUser", data.fullName); // get from backend
+        localStorage.setItem("loggedInUser", data.fullName);
 
         navigate("/dashboard");
       } else {
-        alert(data.message); // e.g., Invalid credentials
+        alert(data.message);
       }
     } catch (error) {
       console.error("Login Error:", error);
@@ -57,29 +55,36 @@ function Login() {
   };
 
   return (
-    <div className="login-container">
-      <h2>Login</h2>
+    <div className="login-wrapper">
+      <div className="login-container">
+        <h2>Welcome Back 👋</h2>
 
-      <input
-        type="email"
-        placeholder="Enter Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-      />
+        <input
+          type="email"
+          placeholder="Enter Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
 
-      <input
-        type="password"
-        placeholder="Enter Password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-      />
+        <div className="password-box">
+          <input
+            type={showPassword ? "text" : "password"}
+            placeholder="Enter Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <span onClick={() => setShowPassword(!showPassword)}>
+            {showPassword ? "🙈" : "👁"}
+          </span>
+        </div>
 
-      <button onClick={handleLogin}>Login</button>
+        <button onClick={handleLogin}>Login</button>
 
-      <p className="Register-text">
-        Don't have an Account?{" "}
-        <span onClick={() => navigate("/register")}>Register</span>
-      </p>
+        <p className="Register-text">
+          Don't have an Account?{" "}
+          <span onClick={() => navigate("/register")}>Register</span>
+        </p>
+      </div>
     </div>
   );
 }

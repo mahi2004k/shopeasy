@@ -10,11 +10,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import "./Dashboard.css";
 import DealsSlider from "./DealsSlider";
+import { useCart } from "./CartContext"; // ✅ IMPORTANT
 
-export default function Dashboard({ cartItems, setCartItems }) {
+export default function Dashboard() {
 
   const navigate = useNavigate();
   const API = "http://localhost:5000";
+
+  // ✅ GLOBAL CART
+  const { cartItems, cartCount, addToCart } = useCart();
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("All");
@@ -87,42 +91,6 @@ export default function Dashboard({ cartItems, setCartItems }) {
     navigate("/");
   };
 
-  // 🛒 ADD TO CART (FIXED)
-  const addToCart = async (product) => {
-    try {
-      await fetch(`${API}/cart`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          product_id: product.id,
-          name: product.name,
-          price: product.price,
-          image: product.image
-        })
-      });
-
-      // ✅ Proper state update (ONLY ONCE)
-      setCartItems(prev => {
-        const existing = prev.find(item => item.id === product.id);
-
-        if (existing) {
-          return prev.map(item =>
-            item.id === product.id
-              ? { ...item, qty: item.qty + 1 }
-              : item
-          );
-        }
-
-        return [...prev, { ...product, qty: 1 }];
-      });
-
-    } catch (error) {
-      console.error("Cart error:", error);
-    }
-  };
-
   if (loading) {
     return <div style={{ padding: "40px" }}>Loading products...</div>;
   }
@@ -156,11 +124,13 @@ export default function Dashboard({ cartItems, setCartItems }) {
             <span>Account</span>
           </div>
 
+          {/* 🛒 CART BADGE FIXED */}
           <div className="nav-item cart" onClick={() => navigate("/cart")}>
             🛒
             <span>Cart</span>
+
             <span className="badge">
-              {cartItems?.reduce((sum, item) => sum + (item.qty || 0), 0)}
+              {cartCount || 0}
             </span>
           </div>
 
@@ -261,6 +231,7 @@ export default function Dashboard({ cartItems, setCartItems }) {
 
                   <p>₹{Number(product.price).toLocaleString("en-IN")}</p>
 
+                  {/* ✅ FIXED ADD TO CART */}
                   <button
                     className="cart-btn"
                     onClick={() => addToCart(product)}

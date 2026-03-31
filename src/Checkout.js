@@ -1,28 +1,32 @@
 import "./Checkout.css";
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useCart } from "./CartContext"; // ✅ IMPORTANT
 
-export default function Checkout({ cartItems }) {
+export default function Checkout() {
 
   const navigate = useNavigate();
   const location = useLocation();
+
+  const { cartItems } = useCart(); // ✅ GLOBAL CART
+
   const [paymentMethod, setPaymentMethod] = useState("card");
 
   const buyNowProduct = location.state?.buyNow;
 
+  // ✅ FIXED ITEMS
   const items = buyNowProduct
     ? [{ ...buyNowProduct, qty: 1 }]
-    : cartItems;
+    : cartItems || [];
 
-  const total = items.reduce(
+  // ✅ SAFE TOTAL
+  const total = (items || []).reduce(
     (sum, item) =>
-      sum + Number(item.price.replace(/[^0-9]/g, "")) * item.qty,
+      sum + Number(item.price) * item.qty,
     0
   );
 
-  // ======================
-  // PLACE ORDER FUNCTION
-  // ======================
+  // ================= PLACE ORDER =================
   const handlePlaceOrder = async () => {
     try {
       const res = await fetch("http://localhost:5000/orders", {
@@ -31,9 +35,9 @@ export default function Checkout({ cartItems }) {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          items: items,
-          total: total,
-          paymentMethod: paymentMethod
+          items,
+          total,
+          paymentMethod
         })
       });
 
@@ -52,88 +56,104 @@ export default function Checkout({ cartItems }) {
     }
   };
 
+  // ================= EMPTY =================
   if (!items.length) {
-    return <h2>Your cart is empty</h2>;
+    return <h2 className="empty-cart">Your cart is empty</h2>;
   }
 
+  // ================= UI =================
   return (
     <div className="checkout-page">
-      <h2>Checkout</h2>
+
+      <div className="checkout-header">
+        <h2>Checkout</h2>
+        <p>Review your order and complete payment</p>
+      </div>
 
       <div className="checkout-container">
 
+        {/* LEFT */}
         <div className="checkout-left">
 
-          <div className="checkout-card">
+          {/* ADDRESS */}
+          <div className="card">
             <h3>Delivery Address</h3>
-            <p>
-              Mahesh Konnur <br />
-              Mumbai, Maharashtra <br />
-              400001 <br />
-              Phone: 9876543210
-            </p>
-            <button>Change Address</button>
+            <div className="address-box">
+              <p><strong>Mahesh Konnur</strong></p>
+              <p>Mumbai, Maharashtra</p>
+              <p>400001</p>
+              <p>📞 9876543210</p>
+            </div>
+            <button className="secondary-btn">
+              Change Address
+            </button>
           </div>
 
-          <div className="checkout-card">
+          {/* ITEMS */}
+          <div className="card">
             <h3>Order Items</h3>
 
             {items.map((item, index) => (
               <div key={index} className="checkout-item">
+
                 <img src={item.image} alt={item.name} />
 
-                <div>
+                <div className="item-details">
                   <h4>{item.name}</h4>
-                  <p>{item.price}</p>
-                  <span>Qty: {item.qty}</span>
+
+                  <p className="price">
+                    ₹{Number(item.price).toLocaleString("en-IN")}
+                  </p>
+
+                  <span className="qty">
+                    Qty: {item.qty}
+                  </span>
                 </div>
+
               </div>
             ))}
+
           </div>
 
-          <div className="checkout-card">
+          {/* PAYMENT */}
+          <div className="card">
             <h3>Payment Method</h3>
 
-            <label className={`payment-option ${paymentMethod === "card" ? "active" : ""}`}>
-              <input
-                type="radio"
-                name="payment"
-                checked={paymentMethod === "card"}
-                onChange={() => setPaymentMethod("card")}
-              />
-              Credit / Debit Card
-            </label>
+            <div className="payment-options">
+              {["card", "upi", "cod"].map((method) => (
+                <label
+                  key={method}
+                  className={`payment-option ${
+                    paymentMethod === method ? "active" : ""
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="payment"
+                    checked={paymentMethod === method}
+                    onChange={() => setPaymentMethod(method)}
+                  />
 
-            <label className={`payment-option ${paymentMethod === "upi" ? "active" : ""}`}>
-              <input
-                type="radio"
-                name="payment"
-                checked={paymentMethod === "upi"}
-                onChange={() => setPaymentMethod("upi")}
-              />
-              UPI Payment
-            </label>
+                  {method === "card" && "Credit / Debit Card"}
+                  {method === "upi" && "UPI Payment"}
+                  {method === "cod" && "Cash on Delivery"}
+                </label>
+              ))}
+            </div>
 
-            <label className={`payment-option ${paymentMethod === "cod" ? "active" : ""}`}>
-              <input
-                type="radio"
-                name="payment"
-                checked={paymentMethod === "cod"}
-                onChange={() => setPaymentMethod("cod")}
-              />
-              Cash on Delivery
-            </label>
           </div>
 
         </div>
 
+        {/* RIGHT */}
         <div className="checkout-right">
           <div className="summary-card">
+
             <h3>Price Details</h3>
 
             <div className="summary-row">
               <span>Items</span>
-              <span>₹{total.toLocaleString()}</span>
+              <span>₹{total.toLocaleString("en-IN")}</span>
             </div>
 
             <div className="summary-row">
@@ -141,22 +161,29 @@ export default function Checkout({ cartItems }) {
               <span className="free">FREE</span>
             </div>
 
+            <hr />
+
             <div className="summary-total">
               <span>Total Amount</span>
-              <span>₹{total.toLocaleString()}</span>
+              <span>₹{total.toLocaleString("en-IN")}</span>
             </div>
 
             <button
-              className="place-order"
+              className="place-order-btn"
               onClick={handlePlaceOrder}
             >
               Place Order
             </button>
 
+            <p className="secure-text">
+              🔒 Safe and secure payments
+            </p>
+
           </div>
         </div>
 
       </div>
+
     </div>
   );
 }
